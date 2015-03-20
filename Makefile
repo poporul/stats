@@ -1,11 +1,13 @@
-PROGRAM_NAME := stats
+EXECUTABLE := stats
 FRAMEWORKS := -framework IOKit -framework CoreFoundation
 
-all: utils.o smc.o main.o
-	gcc $(FRAMEWORKS) -lncurses $^ -o $(PROGRAM_NAME)
+all: $(EXECUTABLE)
+
+$(EXECUTABLE): utils.o smc.o main.o
+	gcc $(FRAMEWORKS) -lncurses $^ -o $(EXECUTABLE)
 
 %.o: %.c
-	gcc -c $<
+	gcc -o $@ -c $<
 
 clean:
 	rm -rf *.o stats
