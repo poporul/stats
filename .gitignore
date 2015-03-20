@@ -1,0 +1,8 @@
+*.o
+*.so
+
+.DS_Store
+.Spotlight-V100
+.Trashes
+
+stats
