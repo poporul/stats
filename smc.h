@@ -88,3 +88,4 @@ kern_return_t smc_get_key_info();
 kern_return_t smc_read_key();
 
 fan_rpm_t get_fan_rpm(fan_number_t number);
+void redraw_rpm_info(fan_rpm_t lfan_result, fan_rpm_t rfan_result);
