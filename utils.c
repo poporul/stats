@@ -5,9 +5,23 @@
 #include "utils.h"
 #include "smc.h"
 
+WINDOW *create_window(int height, int width, int y, int x);
 extern WINDOW *info_canvas;
+pthread_t thread;
 
-void *update_rpm_info(WINDOW *window) {
+void *update_cpu_info(void) {
+  void *result;
+  // TODO
+  return result;
+}
+
+void *update_battery_info(void) {
+  void *result;
+  // TODO
+  return result;
+}
+
+void *update_fan_info(void) {
   fan_rpm_t lfan_rpm_result;
   fan_rpm_t rfan_rpm_result;
 
@@ -35,31 +49,45 @@ void redraw_rpm_info(fan_rpm_t lfan_result, fan_rpm_t rfan_result) {
   mvwprintw(info_canvas, 7, 16, "%u", lfan_result.safeRpm);
   mvwprintw(info_canvas, 7, 26, "%u", rfan_result.safeRpm);
 
-  wrefresh(info_canvas);
+  /*wrefresh(info_canvas);*/
 }
 
 void show_fan_info(void) {
-  mvwprintw(info_canvas, 3, 16, "Left fan");
-  mvwprintw(info_canvas, 3, 26, "Right fan");
+  static WINDOW *fan_info_window = NULL;
 
-  mvwprintw(info_canvas, 4, 1, "Actual RPM");
-  mvwprintw(info_canvas, 5, 1, "Minimum RPM");
-  mvwprintw(info_canvas, 6, 1, "Maximum RPM");
-  mvwprintw(info_canvas, 7, 1, "Safe RPM");
+  if (fan_info_window == NULL) {
+    int startx, starty, width, height;
+    getbegyx(info_canvas, starty, startx);
+    getmaxyx(info_canvas, height, width);
+    fan_info_window = create_window(height - 4, width - 2, 3, startx);
 
-  pthread_t thread;
-  int thread_create_result;
+    mvwprintw(fan_info_window, 3, 16, "Left fan");
+    mvwprintw(fan_info_window, 3, 26, "Right fan");
 
-  thread_create_result = pthread_create(&thread, NULL, (void *(*)(void *)) update_rpm_info, NULL);
-  if (thread_create_result != 0) {
-    perror("Error!!!");
+    mvwprintw(fan_info_window, 4, 1, "Actual RPM");
+    mvwprintw(fan_info_window, 5, 1, "Minimum RPM");
+    mvwprintw(fan_info_window, 6, 1, "Maximum RPM");
+    mvwprintw(fan_info_window, 7, 1, "Safe RPM");
+
+    /*box(fan_info_window, 0, 0);*/
+  }
+
+  wrefresh(info_canvas);
+  wrefresh(fan_info_window);
+
+  if (pthread_create(&thread, NULL, (void *(*)(void *)) update_fan_info, NULL) != 0) {
+    perror("Thread create error");
   }
 }
 
 void show_cpu_info(void) {
-  // TODO
+  if (pthread_create(&thread, NULL, (void *(*)(void *)) update_cpu_info, NULL) != 0) {
+    perror("Thread create error");
+  }
 }
 
 void show_battery_info(void) {
-  // TODO
+  if (pthread_create(&thread, NULL, (void *(*)(void *)) update_battery_info, NULL) != 0) {
+    perror("Thread create error");
+  }
 }

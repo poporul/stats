@@ -2,6 +2,8 @@
 #include <ncurses.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
+#include <errno.h>
 
 #include "utils.h"
 #include "smc.h"
@@ -18,7 +20,7 @@ static int max_columns, max_rows;
 static int selected_item = 1;
 static int highlighted_item = 1;
 
-static WINDOW *create_window(int height, int width, int y, int x);
+WINDOW *create_window(int height, int width, int y, int x);
 static const char *menu_items[] = {
   "Fan speed",
   "Cpu temp",
@@ -57,6 +59,8 @@ int main (int argv, char *argc[]) {
 
   mvwaddstr(menu_canvas, 1, 8, "Select action");
 
+  show_fan_info();
+
   wrefresh(menu_canvas);
   wrefresh(info_canvas);
 
@@ -90,7 +94,7 @@ int main (int argv, char *argc[]) {
   return EXIT_SUCCESS;
 }
 
-static WINDOW *create_window(int height, int width, int y, int x) {
+WINDOW *create_window(int height, int width, int y, int x) {
   WINDOW *window = newwin(height, width, y, x);
   return window;
 }
@@ -142,11 +146,27 @@ static void draw_borders(void) {
   mvwhline(info_canvas, 2, 0, ACS_HLINE, max_columns - MENU_WIDTH - 1);
 }
 
-static void process_menu_enter(void) {
+void set_info_header(void) {
+  int width, height;
+  const char *selected_name = menu_items[selected_item - 1];
+
+  getmaxyx(info_canvas, height, width);
+
   wmove(info_canvas, 1, 0);
   wclrtoeol(info_canvas);
-  mvwprintw(info_canvas, 1, (max_columns - MENU_WIDTH) / 2 - strlen(menu_items[selected_item - 1]) / 2, menu_items[selected_item - 1]);
+  mvwaddch(info_canvas, 1, width - 1, ACS_VLINE);
+  mvwprintw(info_canvas, 1, width / 2 - strlen(selected_name) / 2, selected_name);
   wrefresh(info_canvas);
+}
+
+static void process_menu_enter(void) {
+  extern pthread_t thread;
+
+  set_info_header();
+
+  if (pthread_kill(thread, 0) == 0) {
+    pthread_cancel(thread);
+  }
 
   switch(selected_item) {
     case 1:
