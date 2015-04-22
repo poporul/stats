@@ -21,6 +21,13 @@ static int selected_item = 1;
 static int highlighted_item = 1;
 
 WINDOW *create_window(int height, int width, int y, int x);
+
+enum EMenuColors {
+  HIGHLIGHTED_MENU_C = 1,
+  SELECTED_MENU_C = 2,
+  SELECTED_AND_HIGHLIGHTED_MENU_C = 3
+};
+
 static const char *menu_items[] = {
   "Fan speed",
   "Cpu temp",
@@ -42,9 +49,9 @@ int main (int argv, char *argc[]) {
   curs_set(0);
   start_color();
 
-  init_pair(1, COLOR_WHITE, COLOR_CYAN);    // highlighted
-  init_pair(2, COLOR_MAGENTA, COLOR_BLACK); // selected
-  init_pair(3, COLOR_MAGENTA, COLOR_CYAN);  // selected && highlighted
+  init_pair(HIGHLIGHTED_MENU_C, COLOR_WHITE, COLOR_CYAN);
+  init_pair(SELECTED_MENU_C, COLOR_MAGENTA, COLOR_BLACK);
+  init_pair(SELECTED_AND_HIGHLIGHTED_MENU_C, COLOR_MAGENTA, COLOR_CYAN);
 
   getmaxyx(stdscr, max_rows, max_columns);
 
@@ -102,15 +109,15 @@ WINDOW *create_window(int height, int width, int y, int x) {
 static void draw_menu(WINDOW *window) {
   for(size_t i = 0; i < ARRAY_LENGTH(menu_items); i++) {
     if (highlighted_item == i + 1) {
-      wattron(window, COLOR_PAIR(1));
+      wattron(window, COLOR_PAIR(HIGHLIGHTED_MENU_C));
     }
 
     if (selected_item == i + 1) {
-      wattron(window, A_BOLD | COLOR_PAIR(2));
+      wattron(window, A_BOLD | COLOR_PAIR(SELECTED_MENU_C));
     }
 
     if (selected_item == i + 1 && highlighted_item == i + 1) {
-      wattron(window, COLOR_PAIR(3));
+      wattron(window, COLOR_PAIR(SELECTED_AND_HIGHLIGHTED_MENU_C));
     }
 
     mvwaddch(window, i, 0, ' ');
