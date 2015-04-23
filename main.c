@@ -15,25 +15,28 @@ WINDOW *menu_canvas;
 WINDOW *info_canvas;
 WINDOW *menu_window;
 
+enum EMenuColors {
+  kHighlightColor = 1,
+  kSelectColor = 2,
+  kSelectAndHighlightColor = 3
+};
+
+enum EMenuItems {
+  kFanBattery = 1,
+  kCpuTemp = 2,
+  kBatteryInfo = 3,
+  kExit = 4
+};
+
+static int menu_length = (kExit - kFanBattery) + 1;
+
 static int max_columns, max_rows;
 
 static int selected_item = 1;
 static int highlighted_item = 1;
 
 WINDOW *create_window(int height, int width, int y, int x);
-
-enum EMenuColors {
-  HIGHLIGHTED_MENU_C = 1,
-  SELECTED_MENU_C = 2,
-  SELECTED_AND_HIGHLIGHTED_MENU_C = 3
-};
-
-static const char *menu_items[] = {
-  "Fan speed",
-  "Cpu temp",
-  "Battery info",
-  "Exit"
-};
+const char *get_string_menu_item(enum EMenuItems);
 
 static void draw_menu(WINDOW *window);
 static void draw_borders(void);
@@ -49,15 +52,15 @@ int main (int argv, char *argc[]) {
   curs_set(0);
   start_color();
 
-  init_pair(HIGHLIGHTED_MENU_C, COLOR_WHITE, COLOR_CYAN);
-  init_pair(SELECTED_MENU_C, COLOR_MAGENTA, COLOR_BLACK);
-  init_pair(SELECTED_AND_HIGHLIGHTED_MENU_C, COLOR_MAGENTA, COLOR_CYAN);
+  init_pair(kHighlightColor, COLOR_WHITE, COLOR_CYAN);
+  init_pair(kSelectColor, COLOR_MAGENTA, COLOR_BLACK);
+  init_pair(kSelectAndHighlightColor, COLOR_MAGENTA, COLOR_CYAN);
 
   getmaxyx(stdscr, max_rows, max_columns);
 
   menu_canvas = create_window(max_rows, MENU_WIDTH, 0, 0);
   info_canvas = create_window(max_rows, max_columns - MENU_WIDTH, 0, MENU_WIDTH);
-  menu_window = create_window(ARRAY_LENGTH(menu_items), MENU_WIDTH - 2, 3, 1);
+  menu_window = create_window(menu_length, MENU_WIDTH - 2, 3, 1);
 
   keypad(menu_window, TRUE);
 
@@ -83,7 +86,7 @@ int main (int argv, char *argc[]) {
         break;
 
       case KEY_DOWN:
-        if (highlighted_item < ARRAY_LENGTH(menu_items))
+        if (highlighted_item < menu_length)
           highlighted_item++;
         break;
 
@@ -107,23 +110,23 @@ WINDOW *create_window(int height, int width, int y, int x) {
 }
 
 static void draw_menu(WINDOW *window) {
-  for(size_t i = 0; i < ARRAY_LENGTH(menu_items); i++) {
-    if (highlighted_item == i + 1) {
-      wattron(window, COLOR_PAIR(HIGHLIGHTED_MENU_C));
+  for(size_t menu_item = 1; menu_item <= menu_length; menu_item++) {
+    if (highlighted_item == menu_item) {
+      wattron(window, COLOR_PAIR(kHighlightColor));
     }
 
-    if (selected_item == i + 1) {
-      wattron(window, A_BOLD | COLOR_PAIR(SELECTED_MENU_C));
+    if (selected_item == menu_item) {
+      wattron(window, A_BOLD | COLOR_PAIR(kSelectColor));
     }
 
-    if (selected_item == i + 1 && highlighted_item == i + 1) {
-      wattron(window, COLOR_PAIR(SELECTED_AND_HIGHLIGHTED_MENU_C));
+    if (selected_item == menu_item && menu_item == highlighted_item) {
+      wattron(window, COLOR_PAIR(kSelectAndHighlightColor));
     }
 
-    mvwaddch(window, i, 0, ' ');
-    mvwaddstr(window, i, 1, menu_items[i]);
+    mvwaddch(window, menu_item - 1, 0, ' ');
+    mvwaddstr(window, menu_item - 1, 1, get_string_menu_item(menu_item));
 
-    int title_length = strlen(menu_items[i]);
+    int title_length = strlen(get_string_menu_item(menu_item));
     int width, height;
     getmaxyx(window, height, width);
     int span = width - title_length + 2;
@@ -132,13 +135,7 @@ static void draw_menu(WINDOW *window) {
       waddch(window, ' ');
     }
 
-    if (highlighted_item == i + 1) {
-      wattroff(window, COLOR_PAIR(1));
-    }
-
-    if (selected_item == i + 1) {
-      wattroff(window, A_BOLD | COLOR_PAIR(2));
-    }
+    wattroff(window, A_BOLD | COLOR_PAIR(kHighlightColor) | COLOR_PAIR(kSelectColor));
   }
 }
 
@@ -155,7 +152,7 @@ static void draw_borders(void) {
 
 void set_info_header(void) {
   int width, height;
-  const char *selected_name = menu_items[selected_item - 1];
+  const char *selected_name = get_string_menu_item(selected_item);
 
   getmaxyx(info_canvas, height, width);
 
@@ -197,5 +194,14 @@ static void process_menu_enter(void) {
       close_smc();
       exit(EXIT_SUCCESS);
       break;
+  }
+}
+
+const char *get_string_menu_item(enum EMenuItems item) {
+  switch(item) {
+    case kFanBattery: return "Fan battery";
+    case kCpuTemp: return "Cpu temp";
+    case kBatteryInfo: return "Battery info";
+    case kExit: return "Exit";
   }
 }
