@@ -1,3 +1,5 @@
+.PHONY: all clean
+
 EXECUTABLE := stats
 FRAMEWORKS := -framework IOKit -framework CoreFoundation
 
