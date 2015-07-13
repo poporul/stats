@@ -2,7 +2,6 @@
 #include <ncurses.h>
 #include <stdlib.h>
 #include <string.h>
-#include <pthread.h>
 #include <errno.h>
 
 #include "utils.h"
@@ -32,15 +31,17 @@ static int menu_length = (kExit - kFanBattery) + 1;
 
 static int max_columns, max_rows;
 
-static int selected_item = 1;
-static int highlighted_item = 1;
+int selected_item = kFanBattery;
+static int highlighted_item = kFanBattery;
 
 WINDOW *create_window(int height, int width, int y, int x);
 const char *get_string_menu_item(enum EMenuItems);
 
+void set_info_header(void);
 static void draw_menu(WINDOW *window);
 static void draw_borders(void);
 static void process_menu_enter(void);
+static void init_colors(void);
 
 int main (int argv, char *argc[]) {
   open_smc();
@@ -50,11 +51,9 @@ int main (int argv, char *argc[]) {
   noecho();
 
   curs_set(0);
-  start_color();
 
-  init_pair(kHighlightColor, COLOR_WHITE, COLOR_CYAN);
-  init_pair(kSelectColor, COLOR_MAGENTA, COLOR_BLACK);
-  init_pair(kSelectAndHighlightColor, COLOR_MAGENTA, COLOR_CYAN);
+  start_color();
+  init_colors();
 
   getmaxyx(stdscr, max_rows, max_columns);
 
@@ -70,15 +69,13 @@ int main (int argv, char *argc[]) {
   mvwaddstr(menu_canvas, 1, 8, "Select action");
 
   show_fan_info();
+  set_info_header();
 
   wrefresh(menu_canvas);
   wrefresh(info_canvas);
 
-  wrefresh(menu_window);
-
-  while(1) {
-    int key = wgetch(menu_window);
-
+  int key;
+  while((key = wgetch(menu_window))) {
     switch(key) {
       case KEY_UP:
         if (highlighted_item > 1)
@@ -97,7 +94,7 @@ int main (int argv, char *argc[]) {
     }
 
     draw_menu(menu_window);
-    wrefresh(menu_window);
+    wrefresh(menu_canvas);
   }
 
   endwin();
@@ -164,28 +161,22 @@ void set_info_header(void) {
 }
 
 static void process_menu_enter(void) {
-  extern pthread_t thread;
-
   set_info_header();
 
-  if (pthread_kill(thread, 0) == 0) {
-    pthread_cancel(thread);
-  }
-
   switch(selected_item) {
-    case 1:
+    case kFanBattery:
       show_fan_info();
       break;
 
-    case 2:
-      show_cpu_info();
+    case kCpuTemp:
+      show_cpu_temp();
       break;
 
-    case 3:
+    case kBatteryInfo:
       show_battery_info();
       break;
 
-    case 4:
+    case kExit:
       delwin(menu_window);
       delwin(menu_canvas);
       delwin(info_canvas);
@@ -204,4 +195,10 @@ const char *get_string_menu_item(enum EMenuItems item) {
     case kBatteryInfo: return "Battery info";
     case kExit: return "Exit";
   }
+}
+
+void init_colors(void) {
+  init_pair(kHighlightColor, COLOR_WHITE, COLOR_CYAN);
+  init_pair(kSelectColor, COLOR_MAGENTA, COLOR_BLACK);
+  init_pair(kSelectAndHighlightColor, COLOR_MAGENTA, COLOR_CYAN);
 }
